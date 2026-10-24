@@ -1,4 +1,5 @@
 vim.lsp.config("clangd", {
+    capabilities = require("blink.cmp").get_lsp_capabilities(),
     cmd = {
         "clangd",
         "--background-index",
@@ -30,6 +31,17 @@ vim.api.nvim_create_autocmd("LspAttach", {
         map("gra", vim.lsp.buf.code_action, "代码操作")
         map("K", vim.lsp.buf.hover, "查看符号信息")
         map("<leader>e", vim.diagnostic.open_float, "查看当前位置诊断")
+
+        map("<leader>cf", function()
+            vim.lsp.buf.format({
+                bufnr = event.buf,
+                async = false,
+                timeout_ms = 3000,
+                filter = function(client)
+                    return client.name == "clangd"
+                end,
+            })
+        end, "格式化 C/C++ buffer")
 
         -- 使用内置补全，输入模式下通过 Ctrl-x Ctrl-o 触发。
         vim.bo[event.buf].omnifunc = "v:lua.vim.lsp.omnifunc"
