@@ -14,3 +14,5 @@ opt.smartcase = true
 opt.splitright = true
 opt.updatetime = 250
 opt.clipboard = "unnamedplus" -- 系统剪贴板
+opt.grepprg = "rg --vimgrep --smart-case"
+opt.grepformat = "%f:%l:%c:%m"
