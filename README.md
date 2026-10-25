@@ -16,7 +16,7 @@
 配置不会自动安装系统软件或修改终端字体。图标插件尚未锁定时，首次安装会更新锁文件。
 
 插件包括 nvim-lspconfig、blink.cmp、conform.nvim、telescope.nvim（依赖 plenary）、
-nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua、nvim-web-devicons。
+nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua、nvim-web-devicons、quicker.nvim。
 文件侧栏在左侧，状态栏、诊断和调试变量面板使用内置功能。
 
 外部工具通过 PATH 查找。也会复用已有的 `stdpath('data')/mason/bin`，无需启动 Mason。
@@ -151,6 +151,13 @@ Bash 脚本需要 Git Bash/MSYS2 Bash，PowerShell 脚本通过 `pwsh -NoProfile
 侧栏启用 Nerd Font 文件、文件夹及 Git 图标，常用开发文件图标使用 Catppuccin Mocha 配色。
 终端需使用 Nerd Font（当前 nvim-web-devicons 要求 Nerd Font >= 3.3）。
 模块位于 `lua/workflow/`，后续工作流可独立增加。
+
+Quickfix 使用 quicker.nvim 排版，背景、文件名、行号、分隔线和选中行采用 Mocha 配色，
+错误/警告类型使用 Nerd Font 图标和主题诊断颜色；原有文件侧栏图标保持不变。
+`<leader>q` 打开列表，`Enter` 跳转，`q` 关闭，`>` 展开前后两行代码，`<` 收起上下文。
+`[q` / `]q` 及 `Ctrl+h/j/k/l`、`Ctrl+方向键` 仍可使用。未启用 Quickfix 批量编辑和自动写入功能。
+构建日志中未被解析成错误位置的行仍会显示，只有带诊断类型的条目才显示错误/警告图标。
+该插件由 lazy.nvim 在启动时自动安装，打开 Quickfix 时加载；无需手动安装或额外系统依赖。
 
 参考：[Neovim LSP](https://neovim.io/doc/user/lsp)、
 [CMake Presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)、
