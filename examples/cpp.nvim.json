@@ -1,0 +1,16 @@
+{
+  "build_dir": "build/linux-debug",
+  "configure_preset": "linux-debug",
+  "build_preset": "linux-debug",
+  "test_preset": "linux-debug",
+  "env": {},
+  "debug": {
+    "program": "build/linux-debug/engine",
+    "cwd": ".",
+    "args": ["--validation"]
+  },
+  "tasks": [
+    { "name": "Just: assets", "cmd": ["just", "assets"] },
+    { "name": "Shader: HLSL SPIR-V", "cmd": ["dxc", "-spirv", "-T", "vs_6_0", "-E", "main", "shaders/main.hlsl", "-Fo", "build/main.spv"] }
+  ]
+}

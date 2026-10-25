@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workbench project settings (.nvim.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "argv": { "type": "array", "items": { "type": "string" } }
+  },
+  "properties": {
+    "build_dir": { "type": "string" },
+    "configure_preset": { "type": "string" },
+    "build_preset": { "type": "string" },
+    "test_preset": { "type": "string" },
+    "clangd_args": { "$ref": "#/$defs/argv" },
+    "cargo_args": { "$ref": "#/$defs/argv" },
+    "env": { "type": "object", "additionalProperties": { "type": "string" } },
+    "rust": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "target": { "type": "string" },
+        "features": { "$ref": "#/$defs/argv" },
+        "all_features": { "type": "boolean" }
+      }
+    },
+    "debug": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "program": { "type": "string" }, "cwd": { "type": "string" },
+        "args": { "$ref": "#/$defs/argv" }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["name", "cmd"], "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" }, "cwd": { "type": "string" },
+          "cmd": { "allOf": [{ "$ref": "#/$defs/argv" }], "minItems": 1 }
+        }
+      }
+    }
+  }
+}

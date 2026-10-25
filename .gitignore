@@ -1,0 +1,4 @@
+# Machine-specific settings, credentials and logs never belong in the repository.
+/lua/local.lua
+*.log
+.DS_Store
