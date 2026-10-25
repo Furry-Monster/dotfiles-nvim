@@ -1,11 +1,38 @@
 local M = {}
+local terminals = {}
+
+local function matches(task, root)
+    return root == nil or task.root == root
+end
+
+function M.is_running(root)
+    if M.active and matches(M.active, root) then
+        return true
+    end
+    for _, task in pairs(terminals) do
+        if matches(task, root) then
+            return true
+        end
+    end
+    return false
+end
 
 function M.terminal(opts)
     vim.cmd('botright 12split')
     vim.cmd.enew()
-    local job = vim.fn.jobstart(opts.argv, { term = true, cwd = opts.cwd, env = opts.env })
+    local job = vim.fn.jobstart(opts.argv, {
+        term = true,
+        cwd = opts.cwd,
+        env = opts.env,
+        on_exit = function(id)
+            terminals[id] = nil
+        end,
+    })
     if job <= 0 then
         return vim.notify('Could not start task', vim.log.levels.ERROR)
+    end
+    if opts.track ~= false then
+        terminals[job] = { root = opts.root or opts.cwd }
     end
     vim.cmd.startinsert()
     return job
@@ -20,7 +47,7 @@ function M.start(opts, callback)
     end
     local title = opts.title or table.concat(opts.argv, ' ')
     vim.notify(title)
-    local task = {}
+    local task = { root = opts.root or opts.cwd }
     M.active = task
     local ok, process = pcall(
         vim.system,
@@ -61,10 +88,29 @@ function M.start(opts, callback)
     return process
 end
 
-function M.stop()
-    if M.active and M.active.process then
+function M.stop(root)
+    local stopped = false
+    if M.active and M.active.process and matches(M.active, root) then
         M.active.process:kill(2)
+        stopped = true
     end
+    for id, task in pairs(terminals) do
+        if matches(task, root) then
+            vim.fn.jobstop(id)
+            stopped = true
+        end
+    end
+    return stopped
+end
+
+function M.setup()
+    vim.api.nvim_create_autocmd('VimLeavePre', {
+        group = vim.api.nvim_create_augroup('WorkflowTasks', { clear = true }),
+        desc = 'Stop editor-owned tasks on exit',
+        callback = function()
+            M.stop()
+        end,
+    })
 end
 
 return M

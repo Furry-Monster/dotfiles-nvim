@@ -15,10 +15,10 @@ function M.check()
     end
     vim.health.start('Shared editor services')
     tools({ 'git', 'rg', 'lldb-dap', 'gdb' })
-    local modules = require('config.modules')
+    local registry = require('core.registry')
     local function load(kind, name)
         local path = kind .. '.' .. name
-        local ok, provider = pcall(require, path)
+        local ok, provider = pcall(registry.get, kind, name)
         if not ok then
             vim.health.error('Cannot load ' .. path .. ': ' .. tostring(provider))
             return
@@ -26,7 +26,7 @@ function M.check()
         vim.health.ok('Module loaded: ' .. path)
         return provider
     end
-    for _, name in ipairs(modules.languages) do
+    for _, name in ipairs(registry.names('languages')) do
         vim.health.start('Language: ' .. name)
         local language = load('languages', name)
         if language then
@@ -36,14 +36,14 @@ function M.check()
             end
         end
     end
-    for _, name in ipairs(modules.builders) do
+    for _, name in ipairs(registry.names('builders')) do
         vim.health.start('Build provider: ' .. name)
         local provider = load('builders', name)
         if provider then
             tools(provider.tools or {})
         end
     end
-    for _, name in ipairs(modules.workflows) do
+    for _, name in ipairs(registry.names('workflows')) do
         vim.health.start('Workflow: ' .. name)
         load('workflows', name)
     end

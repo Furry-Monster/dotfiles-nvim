@@ -10,6 +10,10 @@ local M = {
     treesitter = { 'cmake', 'sh', 'json', 'ps1' },
 }
 
+function M.setup()
+    vim.filetype.add({ extension = { ps1 = 'ps1', psm1 = 'ps1', psd1 = 'ps1' } })
+end
+
 function M.setup_lsp()
     vim.lsp.config('neocmake', { root_markers = { 'CMakePresets.json', '.git', 'CMakeLists.txt' } })
     for server, exe in pairs({

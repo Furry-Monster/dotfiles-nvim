@@ -7,15 +7,18 @@ function M.run_task(ctx, task)
     end
     local opts = {
         argv = task.argv,
+        root = ctx.root,
         cwd = task.cwd and require('core.project').path(ctx.root, task.cwd) or ctx.root,
-        env = vim.tbl_extend('force', (ctx.project.build or {}).env or {}, task.env or {}),
+        env = vim.tbl_extend('force', ctx.build.env, task.env or {}),
     }
     if task.terminal then
         return require('core.tasks').terminal(opts)
     end
     if task.parser then
-        assert(vim.tbl_contains(require('config.modules').builders, task.parser), 'Unregistered task parser')
-        opts.parse = assert(require('builders.' .. task.parser).parse, 'Provider has no output parser')
+        opts.parse = assert(
+            require('core.registry').get('builders', task.parser).parse,
+            'Provider has no output parser'
+        )
     else
         local efm = task.errorformat or vim.o.errorformat
         opts.parse = function(stdout, stderr)
@@ -27,11 +30,11 @@ function M.run_task(ctx, task)
     return require('core.tasks').start(opts)
 end
 
-M.actions.stop = function()
-    require('core.tasks').stop()
+M.actions.stop = function(ctx)
+    return require('core.tasks').stop(ctx.root)
 end
 M.actions.debug = function()
-    require('dap').continue()
+    return require('core.debug').continue()
 end
 
 return M

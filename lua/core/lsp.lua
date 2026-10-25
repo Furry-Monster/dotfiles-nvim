@@ -8,12 +8,11 @@ function M.setup()
         float = { border = 'rounded', source = true },
     })
     vim.lsp.config('*', { capabilities = require('blink.cmp').get_lsp_capabilities() })
-    for _, name in ipairs(require('config.modules').languages) do
-        local language = require('languages.' .. name)
+    require('core.registry').each('languages', function(language)
         if language.setup_lsp then
             language.setup_lsp()
         end
-    end
+    end)
     vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('WorkflowLsp', { clear = true }),
         callback = function(event)

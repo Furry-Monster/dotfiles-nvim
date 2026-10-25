@@ -1,11 +1,17 @@
 local M = {}
 
 function M.root()
-    return require('core.workflow').context().root
+    return require('core.context').resolve().root
 end
 
 function M.terminal(argv)
-    return require('core.tasks').terminal({ argv = argv or vim.o.shell, cwd = M.root() })
+    local ctx = require('core.context').resolve()
+    return require('core.tasks').terminal({
+        argv = argv or vim.o.shell,
+        cwd = ctx.root,
+        root = ctx.root,
+        track = argv ~= nil, -- An interactive project shell is not a build/run task.
+    })
 end
 
 function M.run()

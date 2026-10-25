@@ -21,7 +21,7 @@ local M = {
     },
 }
 
-function M.setup_lsp()
+function M.setup()
     vim.treesitter.language.register('slang', 'shaderslang')
     vim.filetype.add({
         extension = {
@@ -44,6 +44,9 @@ function M.setup_lsp()
             slang = 'shaderslang',
         },
     })
+end
+
+function M.setup_lsp()
     for server, spec in pairs(M.servers) do
         vim.lsp.config(server, {
             cmd = { spec.command, '--background-index', '--completion-style=detailed' },

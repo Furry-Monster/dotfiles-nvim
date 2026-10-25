@@ -22,13 +22,3 @@ opt.confirm = true
 opt.mouse = 'a'
 opt.laststatus = 3
 opt.statusline = '%f %h%m%r%=%{&filetype}  %l:%c  %p%% '
-
--- A Windows shell must use its matching command flags. Leave cmd.exe intact
--- on Windows; Bash and PowerShell scripts are launched with argument arrays.
-vim.filetype.add({
-    extension = {
-        ps1 = 'ps1',
-        psm1 = 'ps1',
-        psd1 = 'ps1',
-    },
-})

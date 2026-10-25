@@ -1,4 +1,6 @@
 local M = { filetypes = { 'c', 'cpp', 'cmake' }, tools = { 'cmake', 'ctest', 'ninja', 'make' } }
+-- Plugin configuration is owned by cmake-tools; remember only overlays applied here.
+local overlays = setmetatable({}, { __mode = 'k' })
 
 function M.setup_plugin()
     require('cmake-tools').setup({
@@ -48,11 +50,23 @@ local function enter(ctx)
         vim.cmd.cd(ctx.root)
     end
     local cmake = require('cmake-tools')
-    local env = (ctx.project.build or {}).env
-    if env then
-        local cfg = cmake.get_config()
-        cfg.base_settings.env = vim.tbl_extend('force', cfg.base_settings.env or {}, env)
+    local cfg = cmake.get_config()
+    local state = overlays[cfg]
+    if not state then
+        state = { env = {}, targets = {} }
+        overlays[cfg] = state
     end
+    -- Restore only keys previously overridden, retaining unrelated plugin settings.
+    local env = vim.deepcopy(cfg.base_settings.env or {})
+    for key, original in pairs(state.env) do
+        env[key] = original ~= vim.NIL and original or nil
+    end
+    state.env = {}
+    for key, value in pairs(ctx.build.env) do
+        state.env[key] = env[key] == nil and vim.NIL or env[key]
+        env[key] = value
+    end
+    cfg.base_settings.env = env
     return cmake
 end
 
@@ -60,24 +74,32 @@ local function launch(ctx, debug)
     local cmake = enter(ctx)
     local function run()
         local target = cmake.get_launch_target()
-        if (ctx.project.run or ctx.profile.runtime) and target then
-            local runtime = require('core.project').runtime(ctx)
+        if target then
             local cfg = cmake.get_config()
-            cfg.target_settings[target] = vim.tbl_extend('force', cfg.target_settings[target] or {}, {
-                working_dir = runtime.cwd,
-                args = runtime.args,
-                env = runtime.env,
-            })
+            local state = overlays[cfg]
+            if state.targets[target] then
+                local settings = cfg.target_settings[target] or {}
+                for _, key in ipairs({ 'working_dir', 'args', 'env' }) do
+                    settings[key] = state.targets[target][key]
+                end
+                cfg.target_settings[target] = settings
+                state.targets[target] = nil
+            end
+            if ctx.run_configured then
+                local settings = cfg.target_settings[target] or {}
+                state.targets[target] = {
+                    working_dir = settings.working_dir,
+                    args = vim.deepcopy(settings.args),
+                    env = vim.deepcopy(settings.env),
+                }
+                cfg.target_settings[target] = vim.tbl_extend('force', settings, {
+                    working_dir = ctx.run.cwd,
+                    args = vim.deepcopy(ctx.run.args),
+                    env = vim.deepcopy(ctx.run.env),
+                })
+            end
         end
         if debug then
-            local core = require('core.debug')
-            require('cmake-tools.const').cmake_dap_configuration = core.prepare({
-                name = 'CMake target',
-                type = core.selected or core.adapter(),
-                request = 'launch',
-                runInTerminal = true,
-                initCommands = {},
-            }, ctx)
             cmake.debug({ fargs = {} })
         else
             cmake.run({ fargs = {} })
@@ -95,10 +117,10 @@ end
 
 M.actions = {
     configure = function(ctx)
-        enter(ctx).generate({ fargs = (ctx.project.configure or {}).args or {} })
+        enter(ctx).generate({ fargs = ctx.configure.args })
     end,
     build = function(ctx)
-        enter(ctx).build({ fargs = (ctx.project.build or {}).args or {} })
+        enter(ctx).build({ fargs = ctx.build.args })
     end,
     run = function(ctx)
         launch(ctx, false)

@@ -1,7 +1,7 @@
 local M = {}
-local project = require('builders.cargo_project')
+local project = require('projects.cargo')
 
-function M.choose_program(root, cfg, host, tests)
+function M.choose_program(ctx, cfg, host, tests)
     local dap = require('dap')
     return coroutine.create(function(co)
         local extra = {}
@@ -10,8 +10,8 @@ function M.choose_program(root, cfg, host, tests)
         end
         vim.list_extend(extra, cfg.debug.buildArgs or {})
         require('builders.cargo').start(
-            root,
-            project.args(root, tests and 'test' or 'build', extra, true, host),
+            ctx,
+            project.args(cfg, tests and 'test' or 'build', extra, true, host),
             function(success, artifacts)
                 local choices = {}
                 for _, artifact in ipairs(artifacts) do
@@ -42,9 +42,8 @@ function M.choose_program(root, cfg, host, tests)
 end
 
 function M.configurations(ctx)
-    local root = ctx.root
-    local cfg = project.load(root)
-    local host = require('languages.rust').toolchain(root)
+    local cfg = project.options(ctx)
+    local host = require('toolchains.rust').info(ctx.root)
     if cfg.target and cfg.target ~= host then
         return {}
     end
@@ -56,7 +55,7 @@ function M.configurations(ctx)
                 require('core.debug').configuration(ctx, adapter, {
                     name = 'Cargo ' .. adapter:upper() .. ': host ' .. (tests and 'tests' or 'binary'),
                     program = function()
-                        return M.choose_program(root, cfg, host, tests)
+                        return M.choose_program(ctx, cfg, host, tests)
                     end,
                 })
             )

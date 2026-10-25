@@ -1,5 +1,5 @@
 local M = {}
-local registry = require('config.modules')
+local registry = require('core.registry')
 
 function M.adapter()
     if vim.fn.executable('lldb-dap') == 1 then
@@ -12,8 +12,8 @@ function M.adapter()
 end
 
 function M.prepare(config, ctx)
-    for _, name in ipairs(registry.languages) do
-        local language = require('languages.' .. name)
+    for _, name in ipairs(registry.names('languages')) do
+        local language = registry.get('languages', name)
         if language.enrich_debug and vim.tbl_contains(language.filetypes or {}, ctx.filetype) then
             config = language.enrich_debug(config, ctx)
         end
@@ -22,7 +22,7 @@ function M.prepare(config, ctx)
 end
 
 function M.configuration(ctx, adapter, overrides)
-    local runtime = require('core.project').runtime(ctx)
+    local runtime = ctx.run
     local config = vim.tbl_extend('force', {
         name = 'Native ' .. adapter,
         type = adapter,
@@ -32,7 +32,7 @@ function M.configuration(ctx, adapter, overrides)
         env = next(runtime.env) and runtime.env or nil,
         runInTerminal = true,
     }, overrides or {})
-    return M.prepare(config, ctx)
+    return M.prepare(vim.deepcopy(config), ctx)
 end
 
 function M.configurations(ctx)
@@ -40,8 +40,8 @@ function M.configurations(ctx)
         return ctx.builder.debug_configurations(ctx)
     end
     local supported = false
-    for _, name in ipairs(registry.languages) do
-        local language = require('languages.' .. name)
+    for _, name in ipairs(registry.names('languages')) do
+        local language = registry.get('languages', name)
         if language.native_debug and vim.tbl_contains(language.filetypes or {}, ctx.filetype) then
             supported = true
         end
@@ -72,6 +72,14 @@ function M.configurations(ctx)
     return configs
 end
 
+function M.is_active()
+    return require('dap').session() ~= nil
+end
+
+function M.continue()
+    return require('dap').continue()
+end
+
 function M.setup()
     local dap = require('dap')
     dap.adapters.lldb = { type = 'executable', command = 'lldb-dap', name = 'lldb' }
@@ -81,19 +89,32 @@ function M.setup()
         args = { '--interpreter=dap', '--eval-command', 'set print pretty on' },
     }
     M.selected = M.adapter()
-    dap.adapters.native = function(callback)
-        callback(dap.adapters[M.selected])
+    -- CMake supplies the executable, cwd and env. Resolve the native adapter here,
+    -- so builders never need to overwrite cmake-tools' global constants.
+    dap.adapters.native = function(callback, config)
+        local prepared = M.prepare(
+            vim.tbl_extend('force', config, { type = M.selected }),
+            require('core.context').resolve()
+        )
+        for key, value in pairs(prepared) do
+            config[key] = value
+        end
+        local adapter = dap.adapters[config.type]
+        if type(adapter) == 'function' then
+            adapter(callback, config)
+        else
+            callback(adapter)
+        end
     end
-    for _, name in ipairs(registry.languages) do
-        local language = require('languages.' .. name)
+    for _, name in ipairs(registry.names('languages')) do
+        local language = registry.get('languages', name)
         if language.setup_debug then
             language.setup_debug()
         end
     end
     dap.providers.configs['workflow.native'] = function(bufnr)
-        local ctx = require('core.workflow').context(bufnr)
-        local external = vim.tbl_extend('force', ctx.profile.external or {}, ctx.project.external or {})
-        if external.debug then
+        local ctx = require('core.context').resolve(bufnr)
+        if ctx.external.debug then
             return {}
         end
         return M.configurations(ctx)

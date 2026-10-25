@@ -20,7 +20,7 @@ function M.parse(stdout, stderr, root)
             end
             local item = { text = text, type = severity[diagnostic.level] or 'I', valid = primary and 1 or 0 }
             if primary then
-                item.filename = require('builders.cargo_project').path(root, primary.file_name)
+                item.filename = require('core.project').path(root, primary.file_name)
                 item.lnum, item.col = primary.line_start, primary.column_start
                 item.end_lnum, item.end_col = primary.line_end, primary.column_end
             end
@@ -55,11 +55,12 @@ function M.parse(stdout, stderr, root)
     return items, artifacts
 end
 
-function M.start(root, args, callback)
-    local cfg = require('builders.cargo_project').load(root)
+function M.start(ctx, args, callback)
+    local cfg = require('projects.cargo').options(ctx)
     return require('core.tasks').start({
         argv = args,
-        cwd = root,
+        cwd = ctx.root,
+        root = ctx.root,
         parse = M.parse,
         env = vim.tbl_extend('force', { CARGO_TERM_COLOR = 'never', RUSTUP_AUTO_INSTALL = '0' }, cfg.env),
     }, callback)
@@ -67,12 +68,12 @@ end
 
 M.filetypes = { 'rust', 'toml' }
 M.tools = { 'cargo' }
-M.detect = require('builders.cargo_project').root
+M.detect = require('projects.cargo').root
 
 function M.command(ctx, command, extra)
-    local project = require('builders.cargo_project')
-    local cfg = project.load(ctx.root)
-    local args = project.args(ctx.root, command, extra)
+    local project = require('projects.cargo')
+    local cfg = project.options(ctx)
+    local args = project.args(cfg, command, extra)
     if command == 'run' or command == 'test' then
         if command == 'run' and #cfg.run.args > 0 then
             local separator = vim.fn.index(args, '--')
@@ -88,15 +89,16 @@ function M.command(ctx, command, extra)
         end
         return require('core.tasks').terminal({
             argv = args,
+            root = ctx.root,
             cwd = command == 'run' and cfg.run.cwd or ctx.root,
             env = vim.tbl_extend('force', { RUSTUP_AUTO_INSTALL = '0' }, cfg.run.env),
         })
     end
-    return M.start(ctx.root, project.args(ctx.root, command, extra, true))
+    return M.start(ctx, project.args(cfg, command, extra, true))
 end
 
-M.stop = function()
-    require('core.tasks').stop()
+M.stop = function(ctx)
+    return require('core.tasks').stop(ctx and ctx.root)
 end
 M.actions = {
     build = function(ctx, args)
@@ -116,8 +118,8 @@ M.actions = {
     end,
     stop = M.stop,
     debug = function(ctx)
-        local cfg = require('builders.cargo_project').load(ctx.root)
-        if cfg.target and cfg.target ~= require('languages.rust').toolchain(ctx.root) then
+        local cfg = require('projects.cargo').options(ctx)
+        if cfg.target and cfg.target ~= require('toolchains.rust').info(ctx.root) then
             return vim.notify('This target is not a host executable; use your external debugging workflow')
         end
         return require('dap').continue()
@@ -135,7 +137,7 @@ function M.setup()
         if not vim.tbl_contains({ 'build', 'check', 'clippy', 'test', 'run' }, command) then
             return vim.notify('Supported: Cargo build/check/clippy/test/run')
         end
-        require('core.workflow').execute(
+        require('core.actions').execute(
             ({ clippy = 'lint' })[command] or command,
             { builder = 'cargo', args = args }
         )
@@ -145,7 +147,9 @@ function M.setup()
             return { 'build', 'check', 'clippy', 'test', 'run' }
         end,
     })
-    vim.api.nvim_create_user_command('CargoStop', M.stop, {})
+    vim.api.nvim_create_user_command('CargoStop', function()
+        require('core.actions').execute('stop', { builder = 'cargo' })
+    end, {})
 end
 
 return M
