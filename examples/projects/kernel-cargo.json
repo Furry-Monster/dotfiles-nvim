@@ -1,0 +1,5 @@
+{
+  "workflow": "kernel",
+  "builder": "cargo",
+  "build": { "args": [] }
+}

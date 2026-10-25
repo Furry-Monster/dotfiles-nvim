@@ -1,8 +1,9 @@
-# Neovim：C/C++ / Vulkan 编辑工作流
+# Neovim：C/C++ / Vulkan 与 Rust 编辑工作流
 
 面向 Linux + Windows，重型工具放在 tmux。Neovim 负责编辑、查找、CMake 操作和按需 CPU 调试。
 使用 Neovim 0.12+；插件统一由 **lazy.nvim** 管理，版本记录在 `lazy-lock.json`。
 默认主题为 Catppuccin Mocha，配置位于 `lua/plugins/theme.lua`。
+分层设计与项目工作流见 [架构说明](docs/architecture.md)。通用 Rust 语言工作流见 [Rust 配置说明](docs/rust.md)，包含 Cargo、交叉编译参数和宿主机调试。
 
 ## 插件与工具
 
@@ -68,7 +69,7 @@ Presets 是保存在项目里的命名构建方案。例如 `gcc-debug` 记录 G
 **先 configure，再打开 C++ 文件**可让 clangd 直接读取正确的 include、宏和编译选项。
 切换 preset 并重新 generate 后，如诊断未刷新，执行 `:lsp restart clangd`。
 复制动作会更新项目顶层的 `compile_commands.json`；如果项目已有独立管理的编译数据库，
-将 `lua/workflow/cmake.lua` 中 `action = 'copy'` 改为 `'none'`，在项目 `.clangd` 中指定数据库目录。
+将 `lua/builders/cmake.lua` 中 `action = 'copy'` 改为 `'none'`，在项目 `.clangd` 中指定数据库目录。
 
 示例提供 GCC/Clang 的 Debug、RelWithDebInfo，以及 Linux 的 GCC + Make。
 每个 preset 使用独立的 `build/<preset名称>` 目录，切换工具链不共用 CMakeCache。
@@ -104,7 +105,7 @@ clangd 从编译数据库读取这些路径，无需编辑器硬编码 SDK 目�
 默认工作目录为构建目录。也可用 `:CMakeLaunchArgs` 单独设置参数。
 
 `:CMakeDebug` 默认优先 LLDB，`:DebugAdapter gdb` / `:DebugAdapter lldb` 切换本次会话的
-CMake 调试器。`F5` 则可以独立选择 GDB/LLDB 启动可执行文件或附加进程。
+原生调试器。`F5` 与 `<leader>cd` 统一调用当前项目的调试动作；Cargo 提供本机产物选择，CMake 调试所选目标。
 使用 Debug 或 RelWithDebInfo 构建；资源路径与环境由目标设置管理。
 GDB/LLDB 负责 CPU 断点、栈和变量；RenderDoc 等 GPU 帧调试工具在 tmux/外部运行。
 
@@ -139,7 +140,7 @@ Bash 脚本需要 Git Bash/MSYS2 Bash，PowerShell 脚本通过 `pwsh -NoProfile
 | `<leader>ct` / `cl` | 构建目标 / 启动目标 |
 | `<leader>cR` / `cd` / `cT` / `cx` | 运行 / 调试 / CTest / 停止构建 |
 | `<leader>q` / `[q` / `]q` | 构建输出 / 错误跳转 |
-| `F5` / `F10` / `F11` / `F12` | 开始或继续调试 / 单步越过 / 进入 / 跳出 |
+| `F5` / `F10` / `F11` / `F12` | 项目调试或继续 / 单步越过 / 进入 / 跳出 |
 | `<leader>db` / `dB` / `dq` | 断点 / 条件断点 / 结束调试 |
 | `<leader>dv` / `df` / `dr` | 检查变量 / 调用栈 / 调试 REPL |
 | `<leader>tt` / `ts` | 项目终端 / 运行当前 Bash 或 PowerShell 脚本 |
@@ -150,7 +151,7 @@ Bash 脚本需要 Git Bash/MSYS2 Bash，PowerShell 脚本通过 `pwsh -NoProfile
 `j/k` 与上下箭头移动，`g?` 查看侧栏快捷键。编辑区普通方向键保持默认光标移动。
 侧栏启用 Nerd Font 文件、文件夹及 Git 图标，常用开发文件图标使用 Catppuccin Mocha 配色。
 终端需使用 Nerd Font（当前 nvim-web-devicons 要求 Nerd Font >= 3.3）。
-模块位于 `lua/workflow/`，后续工作流可独立增加。
+语言、构建后端、项目工作流分别位于 `lua/languages/`、`lua/builders/`、`lua/workflows/`，公共设施位于 `lua/core/`。注册入口是 `lua/config/modules.lua`。
 
 Quickfix 使用 quicker.nvim 排版，背景、文件名、行号、分隔线和选中行采用 Mocha 配色，
 错误/警告类型使用 Nerd Font 图标和主题诊断颜色；原有文件侧栏图标保持不变。

@@ -108,7 +108,7 @@ local function run()
             stopped = true
         end
         dap.run({
-            type = 'cmake_cpp',
+            type = 'native',
             request = 'launch',
             name = 'workflow test ' .. adapter,
             program = root .. '/build/gcc-debug/probe',
@@ -138,9 +138,9 @@ local function run()
         print('PASS DAP launch/stop/terminate: ' .. adapter)
     end
     vim.cmd('DebugAdapter gdb')
-    assert(require('workflow.debug').selected == 'gdb')
+    assert(require('core.debug').selected == 'gdb')
     vim.cmd('DebugAdapter lldb')
-    assert(require('workflow.debug').selected == 'lldb')
+    assert(require('core.debug').selected == 'lldb')
     vim.cmd.cd(original_cwd)
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_get_name(buf):find(root, 1, true) then

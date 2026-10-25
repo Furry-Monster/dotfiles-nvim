@@ -1,8 +1,7 @@
 local M = {}
 
 function M.root()
-    return vim.fs.root(0, { 'CMakePresets.json', 'CMakeUserPresets.json', '.git', 'CMakeLists.txt' })
-        or vim.fn.getcwd()
+    return require('core.workflow').context().root
 end
 
 function M.terminal(argv)

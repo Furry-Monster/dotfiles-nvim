@@ -9,6 +9,7 @@ return {
             local palette = require('catppuccin.palettes').get_palette('mocha')
             local colors = {
                 c = 'blue',
+                rs = 'peach',
                 h = 'blue',
                 cpp = 'lavender',
                 cc = 'lavender',

@@ -1,0 +1,6 @@
+{
+  "workflow": "engine",
+  "builder": "cargo",
+  "build": { "features": [], "args": [] },
+  "run": { "cwd": ".", "args": [], "env": {} }
+}

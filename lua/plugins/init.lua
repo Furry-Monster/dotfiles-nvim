@@ -6,7 +6,7 @@ return {
             delay = 300,
             icons = { mappings = false },
             spec = {
-                { '<leader>c', group = 'C/C++ / CMake' },
+                { '<leader>c', group = 'Code / build' },
                 { '<leader>d', group = 'Debug' },
                 { '<leader>f', group = 'Find' },
                 { '<leader>t', group = 'Terminal / scripts' },
@@ -27,7 +27,7 @@ return {
     {
         'neovim/nvim-lspconfig',
         config = function()
-            require('workflow.lsp').setup()
+            require('core.lsp').setup()
         end,
         dependencies = { 'saghen/blink.cmp' },
     },
@@ -38,22 +38,15 @@ return {
             {
                 '<leader>cf',
                 function()
-                    require('conform').format({ async = true, lsp_format = 'fallback' })
+                    require('conform').format({ async = true })
                 end,
                 mode = { 'n', 'v' },
                 desc = 'Format',
             },
         },
-        opts = {
-            formatters_by_ft = {
-                c = { 'clang_format' },
-                cpp = { 'clang_format' },
-                glsl = { 'clang_format' },
-                sh = { 'shfmt' },
-                lua = { 'stylua' },
-            },
-            -- Explicit formatting preserves existing project conventions on save.
-        },
+        opts = function()
+            return require('core.format').options()
+        end,
     },
     {
         'nvim-telescope/telescope.nvim',
@@ -74,27 +67,20 @@ return {
         lazy = false,
         build = ':TSUpdate',
         config = function()
-            require('nvim-treesitter').setup({})
-            vim.api.nvim_create_autocmd('FileType', {
-                pattern = { 'c', 'cpp', 'cmake', 'sh', 'lua', 'json', 'glsl', 'ps1' },
-                callback = function(event)
-                    -- Vim syntax remains available if a parser is not installed.
-                    pcall(vim.treesitter.start, event.buf)
-                end,
-            })
+            require('core.syntax').setup()
         end,
     },
     {
         'mfussenegger/nvim-dap',
         config = function()
-            require('workflow.debug').setup()
+            require('core.debug').setup()
         end,
     },
     {
         'Civitasv/cmake-tools.nvim',
         dependencies = { 'nvim-lua/plenary.nvim', 'mfussenegger/nvim-dap' },
         config = function()
-            require('workflow.cmake').setup()
+            require('builders.cmake').setup_plugin()
         end,
     },
 }
