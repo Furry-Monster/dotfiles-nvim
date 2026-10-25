@@ -16,20 +16,36 @@ function M.check()
     vim.health.start('Shared editor services')
     tools({ 'git', 'rg', 'lldb-dap', 'gdb' })
     local modules = require('config.modules')
+    local function load(kind, name)
+        local path = kind .. '.' .. name
+        local ok, provider = pcall(require, path)
+        if not ok then
+            vim.health.error('Cannot load ' .. path .. ': ' .. tostring(provider))
+            return
+        end
+        vim.health.ok('Module loaded: ' .. path)
+        return provider
+    end
     for _, name in ipairs(modules.languages) do
         vim.health.start('Language: ' .. name)
-        tools(require('languages.' .. name).tools or {})
-        local check = require('languages.' .. name).check_health
-        if check then
-            check()
+        local language = load('languages', name)
+        if language then
+            tools(language.tools or {})
+            if language.check_health then
+                language.check_health()
+            end
         end
     end
     for _, name in ipairs(modules.builders) do
-        local provider = require('builders.' .. name)
-        if provider.tools then
-            vim.health.start('Build provider: ' .. name)
-            tools(provider.tools)
+        vim.health.start('Build provider: ' .. name)
+        local provider = load('builders', name)
+        if provider then
+            tools(provider.tools or {})
         end
+    end
+    for _, name in ipairs(modules.workflows) do
+        vim.health.start('Workflow: ' .. name)
+        load('workflows', name)
     end
     vim.health.info('GDB DAP requires GDB 14+ with Python; Rust components must match the project toolchain.')
     vim.health.info('Workflow selection and external-action policy are independent of the source language.')

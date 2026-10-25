@@ -1,12 +1,6 @@
 local M = {}
 
 function M.setup()
-    local bin = vim.fn.stdpath('data') .. '/mason/bin'
-    if vim.fn.isdirectory(bin) == 1 then
-        local sep = vim.fn.has('win32') == 1 and ';' or ':'
-        -- Prefer system compilers/clangd, then fall back to installed tools.
-        vim.env.PATH = vim.env.PATH .. sep .. bin
-    end
     vim.diagnostic.config({
         severity_sort = true,
         underline = true,

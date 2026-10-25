@@ -4,6 +4,7 @@
 使用 Neovim 0.12+；插件统一由 **lazy.nvim** 管理，版本记录在 `lazy-lock.json`。
 默认主题为 Catppuccin Mocha，配置位于 `lua/plugins/theme.lua`。
 分层设计与项目工作流见 [架构说明](docs/architecture.md)。通用 Rust 语言工作流见 [Rust 配置说明](docs/rust.md)，包含 Cargo、交叉编译参数和宿主机调试。
+C# 语言与仅编辑的 Unity 工作流见 [C# / Unity 说明](docs/csharp-unity.md)。
 
 ## 插件与工具
 
@@ -20,7 +21,8 @@
 nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua、nvim-web-devicons、quicker.nvim。
 文件侧栏在左侧，状态栏、诊断和调试变量面板使用内置功能。
 
-外部工具通过 PATH 查找。也会复用已有的 `stdpath('data')/mason/bin`，无需启动 Mason。
+外部工具通过 PATH 或明确配置的命令查找，不修改 PATH，不复用旧工具管理器目录。
+插件由 lazy.nvim 管理，语言工具与系统工具的安装由你指定；详见 [外部工具说明](docs/tools.md)。
 
 | 用途 | 工具 |
 | --- | --- |
@@ -34,15 +36,15 @@ nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua�
 | Vulkan 工具 | Vulkan SDK / 开发包、glslangValidator 或 glslc、spirv-val |
 | PowerShell | pwsh、PowerShell Editor Services |
 
-运行 `:WorkflowHealth` 查看路径和缺失工具。缺少可选语言工具时，对应 LSP 不启动。
+运行 `:WorkflowHealth`（`:checkhealth core vim.lsp`）查看注册模块、工具路径、缺失工具与 LSP 状态。
+缺少可选语言工具时，对应 LSP 不启动；LSP 是否附着需在对应项目的源文件中检查。
 安装系统编译器、Vulkan SDK、PowerShell 等仍使用各平台包管理器。
 
-当前机器已有 C/C++ 编译器、clangd、格式化、GDB、LLDB、CMake、Ninja/Make，以及之前安装的
-Bash/CMake/GLSL 语言服务器。尚未发现 pwsh 和 shellcheck；PowerShell 完整编辑支持需补齐下面的依赖。
+以 `:WorkflowHealth` 的当前检查结果为准；不因旧目录中曾存在工具，就把它视为当前配置的依赖来源。
 
 PowerShell：安装 `pwsh`，从官方 PowerShellEditorServices 发布页解压 bundle，
 将环境变量 `POWERSHELL_ES_BUNDLE` 指向包含 `PowerShellEditorServices/Start-EditorServices.ps1`
-的目录，再启动 Neovim。也支持 Mason 默认安装目录下的同名包。
+的目录，再启动 Neovim。
 未配置这些工具时，`.ps1/.psm1/.psd1` 仍有文件类型和基础语法支持。
 
 Tree-sitter 使用新版 main 分支 API。需要高亮时执行：

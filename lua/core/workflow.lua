@@ -11,8 +11,28 @@ function M.context(bufnr)
     local project = require('core.project')
     local root = project.explicit_root(bufnr)
     local data = root and project.load(root) or {}
+    local profile_name = data.workflow
+    if not profile_name then
+        local best_root
+        for _, name in ipairs(registry.workflows) do
+            local candidate = require('workflows.' .. name)
+            local detected = candidate.detect and candidate.detect(bufnr)
+            if detected and (not best_root or #detected > #best_root) then
+                profile_name, best_root = name, detected
+            end
+        end
+        root = root or best_root
+    end
+    profile_name = profile_name or 'default'
+    registered(registry.workflows, profile_name)
+    local profile = require('workflows.' .. profile_name)
     local builder_name = data.builder
-    if builder_name then
+    if builder_name == nil then
+        builder_name = profile.default_builder
+    end
+    if builder_name == false then
+        builder_name = nil
+    elseif builder_name then
         registered(registry.builders, builder_name)
     else
         local candidates = {}
@@ -42,13 +62,11 @@ function M.context(bufnr)
         end
     end
     root = root or vim.fs.root(bufnr, { '.git' }) or vim.fn.getcwd()
-    local profile_name = data.workflow or 'default'
-    registered(registry.workflows, profile_name)
     return {
         root = root,
         project = data,
         workflow = profile_name,
-        profile = require('workflows.' .. profile_name),
+        profile = profile,
         builder_name = builder_name,
         builder = builder_name and require('builders.' .. builder_name) or nil,
         bufnr = bufnr,
@@ -70,7 +88,13 @@ function M.execute(action, opts)
         end
         local external = vim.tbl_extend('force', ctx.profile.external or {}, ctx.project.external or {})
         if external[action] then
-            return vim.notify(ctx.workflow .. ': ' .. action .. ' is handled in tmux')
+            return vim.notify(
+                ctx.workflow
+                    .. ': '
+                    .. action
+                    .. ' is handled in '
+                    .. (ctx.profile.external_handler or 'tmux')
+            )
         end
         local task = (ctx.project.tasks or {})[action]
         if task then

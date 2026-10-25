@@ -18,6 +18,5 @@ require('lazy').setup({ { import = 'plugins' } }, {
     checker = { enabled = false },
     change_detection = { notify = false },
     rocks = { enabled = false },
-    -- Reuse tools previously installed with Mason without requiring its UI.
     performance = { rtp = { disabled_plugins = { 'tutor' } } },
 })

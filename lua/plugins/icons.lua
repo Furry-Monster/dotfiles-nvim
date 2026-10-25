@@ -10,6 +10,7 @@ return {
             local colors = {
                 c = 'blue',
                 rs = 'peach',
+                cs = 'green',
                 h = 'blue',
                 cpp = 'lavender',
                 cc = 'lavender',
