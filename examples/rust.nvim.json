@@ -1,9 +1,0 @@
-{
-  "cargo_args": ["--features", "editor"],
-  "rust": { "features": ["editor"], "all_features": false },
-  "debug": { "program": "target/debug/engine", "args": [] },
-  "tasks": [
-    { "name": "Cargo: release build", "cmd": ["cargo", "build", "--release"] },
-    { "name": "Cargo: one test", "cmd": ["cargo", "test", "my_test", "--", "--nocapture"] }
-  ]
-}

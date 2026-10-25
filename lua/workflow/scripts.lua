@@ -1,0 +1,33 @@
+local M = {}
+
+function M.root()
+    return vim.fs.root(0, { 'CMakePresets.json', 'CMakeUserPresets.json', '.git', 'CMakeLists.txt' })
+        or vim.fn.getcwd()
+end
+
+function M.terminal(argv)
+    local cwd = M.root()
+    vim.cmd('botright 12split')
+    vim.cmd.enew()
+    vim.fn.jobstart(argv or vim.o.shell, { term = true, cwd = cwd })
+    vim.cmd.startinsert()
+end
+
+function M.run()
+    local ft = vim.bo.filetype
+    local exe = ({ sh = 'bash', ps1 = 'pwsh' })[ft]
+    if not exe then
+        return vim.notify('Only Bash / PowerShell scripts are supported')
+    end
+    if vim.fn.executable(exe) ~= 1 then
+        return vim.notify(exe .. ' is not installed', vim.log.levels.ERROR)
+    end
+    if vim.api.nvim_buf_get_name(0) == '' then
+        return vim.notify('Save the script first')
+    end
+    vim.cmd.update()
+    local file = vim.api.nvim_buf_get_name(0)
+    M.terminal(ft == 'ps1' and { exe, '-NoLogo', '-NoProfile', '-File', file } or { exe, file })
+end
+
+return M

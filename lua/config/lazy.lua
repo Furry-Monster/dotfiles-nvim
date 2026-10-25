@@ -1,23 +1,23 @@
-local path = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.uv.fs_stat(path .. "/lua/lazy/init.lua") then
-    local result = vim.fn.system({
-        "git", "clone", "--filter=blob:none", "--branch=stable",
-        "https://github.com/folke/lazy.nvim.git", path,
+local path = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
+if not vim.uv.fs_stat(path) then
+    local out = vim.fn.system({
+        'git',
+        'clone',
+        '--filter=blob:none',
+        '--branch=stable',
+        'https://github.com/folke/lazy.nvim.git',
+        path,
     })
     if vim.v.shell_error ~= 0 then
-        error("lazy.nvim 下载失败，请检查网络后重试:\n" .. result)
+        error('lazy.nvim installation failed:\n' .. out)
     end
 end
 vim.opt.rtp:prepend(path)
-require("lazy").setup({
-    spec = { { import = "plugins" } },
-    defaults = { lazy = true },
-    lockfile = vim.fn.stdpath("config") .. "/lazy-lock.json",
+require('lazy').setup({ { import = 'plugins' } }, {
+    local_spec = false,
     checker = { enabled = false },
-    change_detection = { enabled = false, notify = false },
-    install = { colorscheme = { "tokyonight", "habamax" } },
-    ui = { border = "rounded" },
-    performance = {
-        rtp = { disabled_plugins = { "gzip", "tarPlugin", "tohtml", "tutor", "zipPlugin" } },
-    },
+    change_detection = { notify = false },
+    rocks = { enabled = false },
+    -- Reuse tools previously installed with Mason without requiring its UI.
+    performance = { rtp = { disabled_plugins = { 'tutor' } } },
 })

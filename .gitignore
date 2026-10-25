@@ -1,4 +1,4 @@
-# Machine-specific settings, credentials and logs never belong in the repository.
-/lua/local.lua
-*.log
+nvim.log
+*.swp
+*.swo
 .DS_Store
