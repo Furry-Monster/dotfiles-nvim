@@ -1,8 +1,0 @@
-{
-  "workflow": "kernel",
-  "builder": "commands",
-  "tasks": {
-    "build": { "argv": ["make"], "errorformat": "%f:%l:%c: %t%*[^:]: %m" },
-    "configure": { "argv": ["cmake", "-S", ".", "-B", "build", "-G", "Ninja"] }
-  }
-}

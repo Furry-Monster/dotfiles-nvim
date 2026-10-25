@@ -158,7 +158,7 @@ function M.check_health()
     if cmd then
         vim.health.ok('Roslyn: ' .. vim.fn.exepath(cmd[1]))
     else
-        vim.health.warn('Roslyn not found on PATH; see docs/tools.md')
+        vim.health.warn('Roslyn not found on PATH; see README.md')
     end
     vim.health.info(
         'C# analysis uses generated .sln/.slnx/.csproj references; no project generation/build command is run here.'

@@ -39,8 +39,10 @@ function M.setup_lsp()
         vim.lsp.enable('clangd')
     end
     vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('WorkflowCpp', { clear = true }),
         callback = function(event)
-            if vim.lsp.get_client_by_id(event.data.client_id).name == 'clangd' then
+            local client = vim.lsp.get_client_by_id(event.data.client_id)
+            if client and client.name == 'clangd' then
                 vim.keymap.set(
                     'n',
                     '<leader>cs',

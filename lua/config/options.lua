@@ -27,34 +27,8 @@ opt.statusline = '%f %h%m%r%=%{&filetype}  %l:%c  %p%% '
 -- on Windows; Bash and PowerShell scripts are launched with argument arrays.
 vim.filetype.add({
     extension = {
-        vert = 'glsl',
-        frag = 'glsl',
-        comp = 'glsl',
-        geom = 'glsl',
-        tesc = 'glsl',
-        tese = 'glsl',
-        glsl = 'glsl',
-        rgen = 'glsl',
-        rmiss = 'glsl',
-        rchit = 'glsl',
-        rahit = 'glsl',
-        rint = 'glsl',
-        rcall = 'glsl',
         ps1 = 'ps1',
         psm1 = 'ps1',
         psd1 = 'ps1',
     },
-})
-
-vim.api.nvim_create_autocmd('TextYankPost', {
-    callback = function()
-        vim.hl.on_yank()
-    end,
-})
-vim.api.nvim_create_autocmd('FileType', {
-    pattern = { 'lua', 'sh', 'cmake', 'json', 'jsonc', 'yaml' },
-    callback = function()
-        vim.bo.shiftwidth = 2
-        vim.bo.tabstop = 2
-    end,
 })

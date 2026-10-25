@@ -1,4 +1,0 @@
-{
-  "workflow": "kernel",
-  "builder": "cmake"
-}

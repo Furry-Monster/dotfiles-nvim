@@ -3,8 +3,10 @@
 面向 Linux + Windows，重型工具放在 tmux。Neovim 负责编辑、查找、CMake 操作和按需 CPU 调试。
 使用 Neovim 0.12+；插件统一由 **lazy.nvim** 管理，版本记录在 `lazy-lock.json`。
 默认主题为 Catppuccin Mocha，配置位于 `lua/plugins/theme.lua`。
-分层设计与项目工作流见 [架构说明](docs/architecture.md)。通用 Rust 语言工作流见 [Rust 配置说明](docs/rust.md)，包含 Cargo、交叉编译参数和宿主机调试。
-C# 语言与仅编辑的 Unity 工作流见 [C# / Unity 说明](docs/csharp-unity.md)。
+分层设计与项目工作流见 [结构检查与完善方向](CONFIG_REVIEW.md)。通用 Rust 语言工作流见 [Rust 语言模块](lua/languages/rust.lua)，包含 Cargo、交叉编译参数和宿主机调试。
+C# 语言与仅编辑的 Unity 工作流见 [C# 语言模块](lua/languages/csharp.lua)。
+GLSL、HLSL、Slang 由独立语言模块管理，见 [着色器语言模块](lua/languages/shader.lua)。
+Lua 的 lua-language-server、StyLua 与语法高亮由独立模块管理，见 [Lua 语言模块](lua/languages/lua.lua)。
 
 ## 插件与工具
 
@@ -15,14 +17,14 @@ C# 语言与仅编辑的 Unity 工作流见 [C# / Unity 说明](docs/csharp-unit
 插件及其依赖全部在 `lua/plugins/` 声明，由 lazy.nvim 在首次启动时下载，
 不需要复制本机插件目录或逐个手动安装。插件路径使用 Neovim 的 `stdpath`，不绑定用户名或操作系统。
 目标环境需提供 Neovim、Git 和网络访问；字体与编译器等系统依赖由你选择安装方式，
-配置不会自动安装系统软件或修改终端字体。图标插件尚未锁定时，首次安装会更新锁文件。
+配置不会自动安装系统软件或修改终端字体。插件版本以 `lazy-lock.json` 为准。
 
 插件包括 nvim-lspconfig、blink.cmp、conform.nvim、telescope.nvim（依赖 plenary）、
 nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua、nvim-web-devicons、quicker.nvim。
 文件侧栏在左侧，状态栏、诊断和调试变量面板使用内置功能。
 
 外部工具通过 PATH 或明确配置的命令查找，不修改 PATH，不复用旧工具管理器目录。
-插件由 lazy.nvim 管理，语言工具与系统工具的安装由你指定；详见 [外部工具说明](docs/tools.md)。
+插件由 lazy.nvim 管理，语言工具与系统工具的安装由你指定；见下方工具表与 `:WorkflowHealth`。
 
 | 用途 | 工具 |
 | --- | --- |
@@ -32,7 +34,8 @@ nvim-treesitter、nvim-dap、cmake-tools.nvim、which-key.nvim、nvim-tree.lua�
 | CPU 调试 | lldb-dap 或 GDB >= 14（含 Python / DAP 支持） |
 | Bash 编辑 | bash-language-server、shfmt；shellcheck 提供额外诊断 |
 | CMake 编辑 | neocmakelsp |
-| GLSL 编辑 | glsl_analyzer |
+| 着色器编辑 | 统一接入 clangd；GLSL/Slang 语言分析存在限制，见着色器说明 |
+| Lua 编辑 | lua-language-server、StyLua |
 | Vulkan 工具 | Vulkan SDK / 开发包、glslangValidator 或 glslc、spirv-val |
 | PowerShell | pwsh、PowerShell Editor Services |
 
@@ -50,7 +53,7 @@ PowerShell：安装 `pwsh`，从官方 PowerShellEditorServices 发布页解压 
 Tree-sitter 使用新版 main 分支 API。需要高亮时执行：
 
 ```vim
-:TSInstall c cpp cmake bash lua json glsl powershell
+:TSInstall c cpp rust toml c_sharp cmake bash lua json glsl hlsl slang
 ```
 
 安装 parser 需要 tree-sitter CLI >= 0.26.1、C 编译器、curl、tar。缺少 parser 时回退到 Vim 语法高亮。
@@ -58,11 +61,30 @@ Tree-sitter 使用新版 main 分支 API。需要高亮时执行：
 
 ## 从没有 Presets 的项目开始
 
-Presets 是保存在项目里的命名构建方案。例如 `gcc-debug` 记录 GCC、Ninja、Debug 及输出目录，
-在 Neovim 和 tmux 终端中都可以使用。示例只是模板，不会自动改动你的项目。
+Presets 是保存在项目里的命名构建方案，在 Neovim 和终端中都可以使用。
+当前目录不附带 `examples/` 模板；可从下面的最小配置开始，并按项目调整：
 
-1. 将 `examples/CMakePresets.json` 复制到项目顶层（与主 `CMakeLists.txt` 同级）。
-2. 在项目目录启动 `nvim`，执行 `:CMakeSelectConfigurePreset`，先选 `gcc-debug` 或 `clang-debug`。
+```json
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "dev",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [{ "name": "dev", "configurePreset": "dev" }],
+  "testPresets": [{ "name": "dev", "configurePreset": "dev" }]
+}
+```
+
+1. 在项目顶层（与主 `CMakeLists.txt` 同级）创建下方 `CMakePresets.json`。
+2. 在项目目录启动 `nvim`，执行 `:CMakeSelectConfigurePreset`，选择 `dev`。
 3. 执行 `:CMakeGenerate`。它生成编译数据库，并复制到项目顶层供 clangd 读取。
 4. 执行 `:CMakeSelectBuildPreset`，选择同名 preset，再执行 `:CMakeBuild`。
 5. 如需运行或调试，先 `:CMakeSelectLaunchTarget`，再 `:CMakeRun` 或 `:CMakeDebug`。
@@ -73,29 +95,30 @@ Presets 是保存在项目里的命名构建方案。例如 `gcc-debug` 记录 G
 复制动作会更新项目顶层的 `compile_commands.json`；如果项目已有独立管理的编译数据库，
 将 `lua/builders/cmake.lua` 中 `action = 'copy'` 改为 `'none'`，在项目 `.clangd` 中指定数据库目录。
 
-示例提供 GCC/Clang 的 Debug、RelWithDebInfo，以及 Linux 的 GCC + Make。
+下方最小示例使用 Ninja 和 PATH 中的默认编译器，生成 Debug 配置。
 每个 preset 使用独立的 `build/<preset名称>` 目录，切换工具链不共用 CMakeCache。
 没有 Presets 的项目也可使用 `:CMakeSelectKit`、`:CMakeSelectBuildType`，然后 generate/build。
 
 tmux 中执行相同构建：
 
 ```sh
-cmake --preset gcc-debug
-cmake --build --preset gcc-debug --parallel
-ctest --preset gcc-debug
+cmake --preset dev
+cmake --build --preset dev --parallel
+ctest --preset dev
 ```
 
 项目 `.gitignore` 建议加入 `build/`、`compile_commands.json`、`CMakeUserPresets.json`。
 团队共享配置提交 `CMakePresets.json`；本机 SDK 路径放到不提交的 `CMakeUserPresets.json`。
-示例 `.clang-format` 和 `.clang-tidy` 可按项目需求复制；已有风格配置优先，不会全局强加 C++ 标准。
+`.clang-format` 和 `.clang-tidy` 由项目自行维护；已有风格配置优先，不会全局强加 C++ 标准。
 
 ## Vulkan / 图形程序
 
-GLSL 常规阶段和光追阶段后缀都映射为 `glsl`，使用 glsl_analyzer 补全和导航。
-`<leader>cf` 通过 clang-format 格式化 C/C++/GLSL。
+GLSL、HLSL、Slang 的文件类型、LSP 和格式化统一由 `languages/shader.lua` 管理。
+GLSL 常规阶段和光追阶段后缀都映射为 `glsl`；三种语言统一接入独立的 shader_clangd 配置。
+编辑功能与格式化复用现有快捷键，具体行为见 [着色器语言模块](lua/languages/shader.lua)。
 着色器的 Vulkan 目标版本、宏、include 路径和 SPIR-V 生成应放在项目 CMake 规则中，
 再从 tmux 构建，例如 `glslangValidator -V shader.vert -o shader.vert.spv`；编辑器的 GLSL
-诊断不能替代实际着色器编译。HLSL/Slang 暂未加入，后续可按项目需要扩展。
+诊断不能替代实际着色器编译。
 
 Vulkan 头文件/链接库由项目通过 `find_package(Vulkan REQUIRED)` 与 `Vulkan::Vulkan` 管理；
 clangd 从编译数据库读取这些路径，无需编辑器硬编码 SDK 目录。
@@ -119,7 +142,7 @@ MSYS2 CLANG64 工具链。用对应环境的 PATH 启动 Neovim，并确保 CMak
 及依赖库属于兼容工具链。原生 LLVM/MSVC ABI 需要 Developer 环境和相应 SDK，不能直接混用 MinGW 库。
 Presets 指定的编译器名称在 Windows 同样从 PATH 解析，必要时在 UserPresets 中设本机绝对路径。
 
-`lldb-dap.exe` 必须可执行；GDB 需要支持 DAP。Windows 未做本机实测，Linux 下已验证的结果见下方。
+`lldb-dap.exe` 必须可执行；GDB 需要支持 DAP。Windows 未做本机实测，本次验证范围见 [检查记录](CONFIG_REVIEW.md)。
 Bash 脚本需要 Git Bash/MSYS2 Bash，PowerShell 脚本通过 `pwsh -NoProfile -File` 运行。
 没有改写 Windows 默认 shell 及其命令参数。tmux 可在 Linux/WSL 中使用。
 
@@ -153,6 +176,7 @@ Bash 脚本需要 Git Bash/MSYS2 Bash，PowerShell 脚本通过 `pwsh -NoProfile
 `j/k` 与上下箭头移动，`g?` 查看侧栏快捷键。编辑区普通方向键保持默认光标移动。
 侧栏启用 Nerd Font 文件、文件夹及 Git 图标，常用开发文件图标使用 Catppuccin Mocha 配色。
 终端需使用 Nerd Font（当前 nvim-web-devicons 要求 Nerd Font >= 3.3）。
+插件声明按编辑器功能（`editor.lua`）、语言编辑（`coding.lua`）、构建与调试（`build.lua`）分组；其他界面插件保留独立文件。
 语言、构建后端、项目工作流分别位于 `lua/languages/`、`lua/builders/`、`lua/workflows/`，公共设施位于 `lua/core/`。注册入口是 `lua/config/modules.lua`。
 
 Quickfix 使用 quicker.nvim 排版，背景、文件名、行号、分隔线和选中行采用 Mocha 配色，

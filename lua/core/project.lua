@@ -12,8 +12,10 @@ function M.load(root)
     if vim.fn.filereadable(file) == 0 then
         return {}
     end
-    local data = vim.json.decode(table.concat(vim.fn.readfile(file), '\n'))
-    assert(type(data) == 'table', file .. ' must contain a JSON object')
+    local content = table.concat(vim.fn.readfile(file), '\n')
+    local ok, data = pcall(vim.json.decode, content)
+    assert(ok, file .. ': invalid JSON: ' .. tostring(data))
+    assert(content:match('^%s*{') and type(data) == 'table', file .. ' must contain a JSON object')
     return data
 end
 

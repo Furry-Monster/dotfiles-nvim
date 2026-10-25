@@ -5,11 +5,7 @@ function M.root()
 end
 
 function M.terminal(argv)
-    local cwd = M.root()
-    vim.cmd('botright 12split')
-    vim.cmd.enew()
-    vim.fn.jobstart(argv or vim.o.shell, { term = true, cwd = cwd })
-    vim.cmd.startinsert()
+    return require('core.tasks').terminal({ argv = argv or vim.o.shell, cwd = M.root() })
 end
 
 function M.run()

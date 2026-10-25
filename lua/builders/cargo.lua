@@ -81,9 +81,14 @@ function M.command(ctx, command, extra)
             end
             vim.list_extend(args, cfg.run.args)
         end
+        if command == 'run' and cfg.run.cwd ~= ctx.root then
+            -- Keep Cargo pointed at the project when running from an asset directory.
+            table.insert(args, 3, '--manifest-path')
+            table.insert(args, 4, vim.fs.joinpath(ctx.root, 'Cargo.toml'))
+        end
         return require('core.tasks').terminal({
             argv = args,
-            cwd = ctx.root,
+            cwd = command == 'run' and cfg.run.cwd or ctx.root,
             env = vim.tbl_extend('force', { RUSTUP_AUTO_INSTALL = '0' }, cfg.run.env),
         })
     end

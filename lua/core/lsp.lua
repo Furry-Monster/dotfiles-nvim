@@ -15,6 +15,7 @@ function M.setup()
         end
     end
     vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('WorkflowLsp', { clear = true }),
         callback = function(event)
             local function map(key, fn, desc)
                 vim.keymap.set('n', key, fn, { buffer = event.buf, desc = desc })

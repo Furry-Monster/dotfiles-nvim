@@ -1,5 +1,0 @@
-{
-  "workflow": "engine",
-  "builder": "cmake",
-  "run": { "cwd": ".", "args": [], "env": {} }
-}

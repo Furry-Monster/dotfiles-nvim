@@ -62,6 +62,7 @@ function M.setup_lsp()
     end
     vim.api.nvim_create_user_command('RustExpandMacro', M.expand_macro, {})
     vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('WorkflowRust', { clear = true }),
         pattern = 'rust',
         callback = function(event)
             vim.keymap.set(
