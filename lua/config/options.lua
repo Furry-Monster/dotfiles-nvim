@@ -22,3 +22,8 @@ opt.confirm = true
 opt.mouse = 'a'
 opt.laststatus = 3
 opt.statusline = '%f %h%m%r%=%{&filetype}  %l:%c  %p%% '
+
+-- Keep code expanded initially; native za/zc/zo/zM/zR operate on the generated folds.
+opt.foldlevel = 99
+opt.foldlevelstart = 99
+opt.foldtext = ''

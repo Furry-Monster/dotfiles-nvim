@@ -15,6 +15,7 @@ end
 vim.opt.rtp:prepend(path)
 require('lazy').setup({ { import = 'plugins' } }, {
     local_spec = false,
+    install = { missing = false }, -- Plugin installation is explicitly user-triggered with :Lazy install.
     checker = { enabled = false },
     change_detection = { notify = false },
     rocks = { enabled = false },

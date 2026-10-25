@@ -2,6 +2,7 @@ local M = {}
 
 function M.setup()
     require('nvim-treesitter').setup({})
+    require('core.folds').setup()
     local patterns = {}
     require('core.registry').each('languages', function(language)
         vim.list_extend(patterns, language.treesitter or {})
