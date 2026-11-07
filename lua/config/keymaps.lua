@@ -10,6 +10,12 @@ map('n', '<leader>xd', vim.diagnostic.open_float, { desc = 'Line diagnostics' })
 map('n', '<leader>tt', function()
     require('core.terminal').terminal()
 end, { desc = 'Project terminal' })
+-- Traditional terminals send Ctrl+~ as Ctrl+^.
+for _, key in ipairs({ '<C-~>', '<C-`>', '<C-^>' }) do
+    map({ 'n', 'i', 't' }, key, function()
+        require('core.terminal').toggle()
+    end, { desc = 'Toggle terminal', silent = true })
+end
 map('n', '<leader>ts', function()
     require('core.terminal').run()
 end, { desc = 'Run current Bash/PowerShell script' })
