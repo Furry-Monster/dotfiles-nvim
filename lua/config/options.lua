@@ -20,6 +20,7 @@ opt.wrap = false
 opt.undofile = true
 opt.confirm = true
 opt.mouse = 'a'
+opt.clipboard = 'unnamedplus'
 opt.laststatus = 3
 opt.statusline = '%f %h%m%r%=%{&filetype}  %l:%c  %p%% '
 
